@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: welcome
+  namespace: app-test
+  labels:
+    app: welcome
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: welcome
+  template:
+    metadata:
+      labels:
+        app: welcome
+    spec:
+      containers:
+        - name: welcome
+          image: r.qihoo.cloud/bpd/quc/gate-test:3c941131a894633811d31611200b2c59959ce80d
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8360
+              name: gate-port
+          args: ["run","--mode=release","--port=8360","--ucenter=ucenter:9001","--intf=login.360.cn"]
+          livenessProbe:
+            exec:
+              command:
+                - /go/bin/gate
+                - live
+            initialDelaySeconds: 3
+            periodSeconds: 2
+          readinessProbe: #返回httpcode 200-400 代表可以接受请求
+            httpGet:
+              path: /ops/health?__apiv=1.0
+              port: 8360
+            initialDelaySeconds: 3
+            periodSeconds: 2
+          env:
+            - name: qihoo_logs_go-quc
+              value: "stdout"
+            - name: qihoo_logs_go-quc_tags
+              value: "app=go-quc,service=gate"
+            - name: qihoo_logs_go-quc_target
+              value: logtest
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: welcome
+  namespace: app-test
+spec:
+  type: NodePort
+  ports:
+    - name: gate-port
+      port: 8360
+      protocol: TCP
+      targetPort: 8360
+      nodePort: 30002
+  selector:
+    app: gate
