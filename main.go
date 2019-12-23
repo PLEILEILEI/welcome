@@ -2,21 +2,32 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"github.com/spf13/cobra"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+	"welcome/probe"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
+	if err := probe.Create(); err != nil {
+		panic(fmt.Sprintf("liveness probe init failed | err:%+v\n",err))
+	}
 	router := gin.Default()
-	router.GET("/", func(c *gin.Context) {
-		time.Sleep(5 * time.Second)
-		c.String(http.StatusOK, "Welcome Gin Server, Now is %s",time.Now().String())
+	router.Use(func(c *gin.Context) {
+		if c.Request.URL.Path == "/ready" {
+			c.AbortWithStatus(http.StatusOK)
+		}
+	})
+
+	router.GET("/welcome", func(c *gin.Context) {
+		c.String(http.StatusOK, "Welcome Gin Server, Now is %s", time.Now().String())
 	})
 
 	srv := &http.Server{
@@ -30,7 +41,9 @@ func main() {
 			log.Fatalf("listen: %s\n", err)
 		}
 	}()
-
+	cmd := &cobra.Command{}
+	cmd.AddCommand(newLiveCommand())
+	cmd.Execute()
 	// Wait for interrupt signal to gracefully shutdown the server with
 	// a timeout of 5 seconds.
 	quit := make(chan os.Signal)
@@ -46,10 +59,29 @@ func main() {
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatal("Server Shutdown:", err)
 	}
+	if err := probe.Remove(); err != nil {
+		log.Fatal("liveness probe remove failed | err:",err)
+	}
 	// catching ctx.Done(). timeout of 5 seconds.
 	select {
 	case <-ctx.Done():
 		log.Println("timeout of 5 seconds.")
 	}
 	log.Println("Server exiting")
+}
+
+func newLiveCommand() *cobra.Command {
+	cmds := &cobra.Command{
+		Use:   "live",
+		Short: "",
+		Run: func(cmd *cobra.Command, args []string) {
+			if probe.Exists() {
+				println("liveness ok")
+				os.Exit(0)
+			}
+			println("liveness failed")
+			os.Exit(1)
+		},
+	}
+	return cmds
 }

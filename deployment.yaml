@@ -6,7 +6,7 @@ metadata:
   labels:
     app: welcome
 spec:
-  replicas: 2
+  replicas: 3
   selector:
     matchLabels:
       app: welcome
@@ -17,11 +17,11 @@ spec:
     spec:
       containers:
         - name: welcome
-          image: r.qihoo.cloud/bpd/quc/gate-test:3c941131a894633811d31611200b2c59959ce80d
+          image: dddatago/welcome:latest
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 8360
-              name: gate-port
+            - containerPort: 8888
+              name: welcome-port
           args: ["run","--mode=release","--port=8360","--ucenter=ucenter:9001","--intf=login.360.cn"]
           livenessProbe:
             exec:
@@ -32,8 +32,8 @@ spec:
             periodSeconds: 2
           readinessProbe: #返回httpcode 200-400 代表可以接受请求
             httpGet:
-              path: /ops/health?__apiv=1.0
-              port: 8360
+              path: /ready
+              port: 8888
             initialDelaySeconds: 3
             periodSeconds: 2
           env:
@@ -52,10 +52,10 @@ metadata:
 spec:
   type: NodePort
   ports:
-    - name: gate-port
-      port: 8360
+    - name: welcome-port
+      port: 80
       protocol: TCP
-      targetPort: 8360
-      nodePort: 30002
+      targetPort: 8888
+      nodePort: 30003
   selector:
     app: gate
