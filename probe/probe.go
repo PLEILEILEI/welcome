@@ -3,11 +3,11 @@ package probe
 import (
 	"io/ioutil"
 	"os"
+	"time"
 )
 
 var (
 	fileName = "/tmp/probe"
-	file     *os.File
 )
 
 func Create() error {
@@ -18,11 +18,10 @@ func Create() error {
 	if err != nil {
 		return err
 	}
-	file, err = ioutil.TempFile("/tmp", "probe")
+	err = ioutil.WriteFile(fileName,[]byte(time.Now().String()),0777)
 	if err != nil {
 		return err
 	}
-	fileName = file.Name()
 	return err
 }
 

@@ -6,4 +6,4 @@ COPY / .
 RUN go build -mod=vendor -o welcome
 
 WORKDIR /welcome/
-CMD ["./welcome"]
+CMD ["./welcome","run"]
