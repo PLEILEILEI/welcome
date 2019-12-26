@@ -3,22 +3,16 @@ package probe
 import (
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"time"
 )
 
 var (
-	fileName = "/tmp/probe"
+	fileName = "probeFile"
 )
 
 func Create() error {
-	_, err := os.Stat("/tmp")
-	if os.IsNotExist(err) {
-		err = os.Mkdir("/tmp", 0777)
-	}
-	if err != nil {
-		return err
-	}
-	err = ioutil.WriteFile(fileName,[]byte(time.Now().String()),0777)
+	err := ioutil.WriteFile(locateFile(),[]byte(time.Now().String()),0644)
 	if err != nil {
 		return err
 	}
@@ -26,12 +20,17 @@ func Create() error {
 }
 
 func Remove() error {
-	return os.Remove(fileName)
+	return os.Remove(locateFile())
 }
 
 func Exists() bool {
-	if _, err := os.Stat(fileName); err == nil {
+	if _, err := os.Stat(locateFile()); err == nil {
 		return true
 	}
 	return false
+}
+
+func locateFile() string {
+	dir,_ :=  filepath.Abs(filepath.Dir(os.Args[0]))
+	return dir+"/"+fileName
 }

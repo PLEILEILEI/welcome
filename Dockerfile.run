@@ -1,7 +1,3 @@
 FROM alpine:latest
-RUN apk --no-cache add ca-certificates
-
-WORKDIR /welcome/
 COPY welcome .
-
-CMD ["./welcome"]
+CMD ["./welcome","run"]

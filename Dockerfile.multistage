@@ -1,14 +1,7 @@
-FROM golang:alpine as builder
-RUN apk update && apk add --no-cache git
-# Create appuser.
-RUN adduser --disabled-passwor --gecos '' appuser
+FROM golang:1.12-alpine as builder
 WORKDIR /welcome
 COPY . .
-RUN GOOS=linux GOARCH=amd64 go build -mod=vendor -ldflags="-w -s" -o app
-#RUN go build -mod=vendor --o app
-FROM alpine
-RUN echo 'Asia/Shanghai' >/etc/timezone
-COPY --from=builder /etc/passwd /etc/passwd
-COPY --from=builder /welcome/app /home/welcome
-USER appuser
-ENTRYPOINT ["/home/welcome"]
+RUN CGO_ENABLED=0 GOOS=linux go build -mod=vendor -ldflags="-w -s" -o app
+FROM scratch
+COPY --from=builder /welcome/app /welcome
+CMD ["./welcome","run"]
